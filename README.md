@@ -1,6 +1,15 @@
 # Build New
 
-A blank-slate starter for building full-stack apps with **Rails 8 + Inertia.js + React 19 + PostgreSQL**. TypeScript, Tailwind CSS 4, shadcn/ui (new-york).
+A blank-slate starter for building full-stack apps with **Rails 8 + Inertia.js + React 19 + PostgreSQL** — by [Brian Casel](https://buildermethods.com) at Builder Methods.
+
+## Stay in the loop
+
+- [**Builder Methods Pro**](https://buildermethods.com/pro) — Training, community, and direct support from Brian and fellow builders.
+- [**Builder Briefing**](https://buildermethods.com) — Brian's free weekly newsletter with updates and notes on building with AI.
+
+## What's inside
+
+Rails 8 + Inertia.js + React 19, TypeScript, Tailwind CSS 4, shadcn/ui (new-york), Vite 7, PostgreSQL.
 
 Ships with:
 
@@ -12,6 +21,10 @@ Ships with:
 - Mobile-responsive layouts
 - `letter_opener` for previewing mail in development at `/letter_opener`
 - Solid Queue, Solid Cache, and Solid Cable consolidated into the primary Postgres database
+
+## Documentation
+
+Full documentation and usage guide: [**buildermethods.com/build-new**](https://buildermethods.com/build-new)
 
 ## Requirements
 
@@ -127,3 +140,7 @@ Background jobs (Solid Queue), caching (Solid Cache), and WebSockets (Solid Cabl
 ## Deployment
 
 Production expects a `DATABASE_URL` environment variable and a `RAILS_MASTER_KEY`. Any standard Rails deploy target works — Fly.io, Render, Heroku, Kamal, plain VPS, etc. Add a `Dockerfile` if you want one.
+
+## License
+
+Open source. Free to use, fork, and adapt.
