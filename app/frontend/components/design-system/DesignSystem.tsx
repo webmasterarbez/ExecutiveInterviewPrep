@@ -44,15 +44,15 @@ export function DesignSystem() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" asChild>
-            <Link href="/admin">
+            <Link href="/admin" aria-label="Admin home">
               <ArrowLeft className="h-4 w-4" />
-              Admin home
+              <span className="hidden md:inline">Admin home</span>
             </Link>
           </Button>
           <Button variant="ghost" size="sm" asChild>
-            <a href="/" target="_blank" rel="noopener noreferrer">
+            <a href="/" target="_blank" rel="noopener noreferrer" aria-label="App home">
               <ExternalLink className="h-4 w-4" />
-              App home
+              <span className="hidden md:inline">App home</span>
             </a>
           </Button>
           <ThemeToggle />

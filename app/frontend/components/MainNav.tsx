@@ -70,7 +70,7 @@ export function MainNav({
     <>
       <aside
         className={cn(
-          "hidden shrink-0 flex-col border-r border-hairline bg-page transition-[width] duration-200 lg:flex",
+          "sticky top-0 hidden h-screen shrink-0 flex-col border-r border-hairline bg-page transition-[width] duration-200 lg:flex",
           open ? "w-56" : "w-14",
         )}
       >
@@ -201,7 +201,12 @@ function RailNav({
 }) {
   const { url } = usePage()
   return (
-    <nav className="flex flex-1 flex-col gap-1 p-2 text-sm">
+    <nav
+      className={cn(
+        "flex min-h-0 flex-1 flex-col gap-1 p-2 text-sm",
+        open ? "overflow-x-hidden overflow-y-auto" : "overflow-visible",
+      )}
+    >
       {items.map((item) => (
         <NavItem
           key={item.href}
@@ -252,7 +257,7 @@ function NavItem({
       {!open && (
         <span
           role="tooltip"
-          className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md border border-hairline bg-page px-2 py-1 text-xs font-medium text-ink-display opacity-0 shadow-md transition-opacity group-hover/nav-item:opacity-100"
+          className="pointer-events-none absolute left-full top-1/2 z-50 ml-[13px] -translate-y-1/2 whitespace-nowrap rounded-md border border-hairline bg-page px-2 py-1 text-xs font-medium text-ink-display opacity-0 shadow-sm transition-opacity group-hover/nav-item:opacity-100"
         >
           {label}
         </span>
