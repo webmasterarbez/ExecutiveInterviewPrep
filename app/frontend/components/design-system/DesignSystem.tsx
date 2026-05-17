@@ -15,6 +15,7 @@ import { FootersSection } from "@/components/design-system/sections/structure/Fo
 import { BaseStylesSection } from "@/components/design-system/sections/base-styles/BaseStylesSection";
 import { IconographySection } from "@/components/design-system/sections/elements/IconographySection";
 import { ButtonsSection } from "@/components/design-system/sections/elements/ButtonsSection";
+import { ButtonDropdownSection } from "@/components/design-system/sections/elements/ButtonDropdownSection";
 import { FormsSection } from "@/components/design-system/sections/elements/FormsSection";
 import { BadgesSection } from "@/components/design-system/sections/elements/BadgesSection";
 import { ToggleButtonsSection } from "@/components/design-system/sections/elements/ToggleButtonsSection";
@@ -113,6 +114,7 @@ export function DesignSystem() {
           <FootersSection />
           <IconographySection />
           <ButtonsSection />
+          <ButtonDropdownSection />
           <FormsSection />
           <BadgesSection />
           <ToggleButtonsSection />
