@@ -47,6 +47,9 @@ group :development do
   gem "letter_opener"
   # Web interface to browse sent mail [https://github.com/fgrehm/letter_opener_web]
   gem "letter_opener_web"
+
+  # Process manager for Procfile-based applications
+  gem "foreman"
 end
 
 group :test do
