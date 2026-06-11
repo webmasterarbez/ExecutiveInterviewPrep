@@ -11,6 +11,15 @@ Rails.application.routes.draw do
   get "dashboard", to: "dashboard#show", as: :dashboard
   get "settings",  to: "settings#show",  as: :settings
 
+  resources :interview_requests, only: %i[ show update ] do
+    member do
+      post :confirm
+      post :retry
+    end
+  end
+
+  post "webhooks/elevenlabs", to: "webhooks/elevenlabs#create"
+
   namespace :admin do
     root to: redirect("/admin/users")
     get "design-system", to: "design_system#show", as: :design_system

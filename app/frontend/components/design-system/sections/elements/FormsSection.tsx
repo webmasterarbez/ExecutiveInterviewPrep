@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Radio, RadioGroup } from "@/components/ui/radio";
 import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { RichTextField } from "@/components/ui/rich-text-field";
 
 const code = `import { Input } from "@/components/ui/input";
@@ -11,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Radio, RadioGroup } from "@/components/ui/radio";
 import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { RichTextField } from "@/components/ui/rich-text-field";
 
 <form className="space-y-4">
@@ -60,6 +62,12 @@ import { RichTextField } from "@/components/ui/rich-text-field";
     </span>
   </label>
 
+  {/* Textarea */}
+  <div className="space-y-2">
+    <label htmlFor="notes">Notes</label>
+    <Textarea id="notes" placeholder="Anything else we should know?" />
+  </div>
+
   {/* Rich text (milkdown) */}
   <div className="space-y-2">
     <label htmlFor="bio">Bio</label>
@@ -76,7 +84,8 @@ export function FormsSection() {
       title="Forms"
       description={
         <>
-          Forms compose <code>&lt;Input&gt;</code>, <code>&lt;Select&gt;</code>,
+          Forms compose <code>&lt;Input&gt;</code>, <code>&lt;Select&gt;</code>,{" "}
+          <code>&lt;Textarea&gt;</code>,
           <code>&lt;Checkbox&gt;</code>, <code>&lt;Radio&gt;</code>,{" "}
           <code>&lt;RichTextField&gt;</code> (milkdown), native HTML labels,
           helper text, and <code>&lt;Button&gt;</code>. Vertical spacing between
@@ -159,6 +168,14 @@ export function FormsSection() {
               </span>
             </span>
           </label>
+
+          <div className="space-y-2">
+            <label htmlFor="ds-form-notes">Notes</label>
+            <Textarea
+              id="ds-form-notes"
+              placeholder="Anything else we should know?"
+            />
+          </div>
 
           <div className="space-y-2">
             <label htmlFor="ds-form-bio">Bio</label>

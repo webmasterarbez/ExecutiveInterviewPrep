@@ -1,6 +1,7 @@
-import { Head, usePage } from "@inertiajs/react"
+import { Head, Link, usePage } from "@inertiajs/react"
 import { AppShell } from "@/components/AppShell"
-import { Badge, type BadgeProps } from "@/components/ui/badge"
+import { Badge } from "@/components/ui/badge"
+import { statusBadge } from "@/lib/status"
 
 import type { PageProps } from "@/types/inertia"
 
@@ -16,15 +17,6 @@ type InterviewRequestItem = {
 }
 
 type DashboardProps = PageProps<{ interview_requests: InterviewRequestItem[] }>
-
-const STATUS_BADGES: Record<string, { label: string; tone: BadgeProps["tone"] }> = {
-  intake_review: { label: "Needs review", tone: "signal" },
-  pending_research: { label: "Research queued", tone: "neutral" },
-  researching: { label: "Researching", tone: "accent" },
-  briefing_ready: { label: "Briefing ready", tone: "solid" },
-  completed: { label: "Completed", tone: "muted" },
-  failed: { label: "Failed", tone: "danger" },
-}
 
 function formatMeetingDate(iso: string | null) {
   if (!iso) return null
@@ -62,14 +54,14 @@ export default function Dashboard() {
         ) : (
           <ul className="mt-8 divide-y divide-hairline overflow-hidden rounded-md border border-hairline bg-page">
             {requests.map((request) => {
-              const badge = STATUS_BADGES[request.status] ?? {
-                label: request.status,
-                tone: "neutral" as const,
-              }
+              const badge = statusBadge(request.status)
               const meetingDate = formatMeetingDate(request.meeting_date)
               return (
                 <li key={request.id}>
-                  <div className="flex items-center gap-3 px-4 py-3">
+                  <Link
+                    href={`/interview_requests/${request.id}`}
+                    className="flex items-center gap-3 px-4 py-3 no-underline hover:bg-surface"
+                  >
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium text-ink-display">
                         {request.meeting_title ?? "Untitled meeting"}
@@ -86,7 +78,7 @@ export default function Dashboard() {
                       )}
                     </div>
                     <Badge tone={badge.tone}>{badge.label}</Badge>
-                  </div>
+                  </Link>
                 </li>
               )
             })}
