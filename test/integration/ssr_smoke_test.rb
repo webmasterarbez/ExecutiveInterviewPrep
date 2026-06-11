@@ -60,9 +60,11 @@ class SsrSmokeTest < ActiveSupport::TestCase
   private
 
   def port_in_use?
-    TCPSocket.new("localhost", PORT).close
+    # 127.0.0.1 explicitly: "localhost" can resolve to ::1, where an unused
+    # port may drop the SYN (timeout) instead of refusing, e.g. under WSL2.
+    TCPSocket.new("127.0.0.1", PORT, connect_timeout: 1).close
     true
-  rescue Errno::ECONNREFUSED, Errno::EADDRNOTAVAIL
+  rescue Errno::ECONNREFUSED, Errno::EADDRNOTAVAIL, Errno::ETIMEDOUT, IO::TimeoutError
     false
   end
 
@@ -82,7 +84,7 @@ class SsrSmokeTest < ActiveSupport::TestCase
     }.to_json
 
     res = Net::HTTP.post(
-      URI("http://localhost:#{PORT}/render"),
+      URI("http://127.0.0.1:#{PORT}/render"),
       body,
       "Content-Type" => "application/json"
     )

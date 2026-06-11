@@ -1,24 +1,29 @@
-# Milestone 1 — App setup & auth
+# Milestone 1 — App setup & domain foundation
 
 You are entering plan mode to plan and then build milestone 1 of this project.
 
-## Context
+## Context — read before planning
 
-- Read `@_build_plan/prd.md` for the full project context, scope, data model, and tech stack.
-- This is milestone 1, so there are no prior milestones to read.
-- The project is already scaffolded with the Build New starter (Rails 8 + Inertia React). Focus on building within Rails conventions.
+- `@_build_plan/prd.md` — full project context, scope, data model, and tech stack. The **"Build conventions & guardrails (all milestones)"** section and the data model are binding for this milestone.
+- `@CLAUDE.md` — repo ground truth: Inertia response rules, page metadata (four head tags on every page), design system usage, SSR constraints, and testing requirements.
+- This is milestone 1, so there are no prior milestone logs. The starter already provides auth, the app shell, dashboard, settings, and profile pages — verify what exists in the codebase before planning, and build only the delta described in the PRD's milestone 1 section.
+
+## Working rules (binding)
+
+1. **Think before coding.** State your assumptions explicitly. If multiple interpretations of the PRD exist, present them — don't pick silently.
+2. **Simplicity first.** Minimum code that meets "Done when". No features beyond milestone 1 scope, no speculative abstractions or configurability.
+3. **Surgical changes.** Touch only what milestone 1 requires. Don't refactor or restyle starter code. Match existing style.
+4. **Goal-driven execution.** Plan numbered steps, each with its own verification check.
 
 ## Your task
 
-1. Plan the implementation for **only** milestone 1 as defined in the PRD. Use the Build New starter (Rails 8 + Inertia React) as your foundation and follow Rails conventions.
-2. After the user confirms the plan, build only what is in milestone 1's scope.
-3. Verify your work against the "Done when" criteria for milestone 1 in the PRD.
-4. When complete, write a `milestone-log.md` in this folder (`_build_plan/milestones/1-app-setup-auth/milestone-log.md`). Structure it as follows:
-   - **Start with a `## What's new in the app` section at the very top.** This is a concise, human-readable, bulleted list of the main user-facing features or functionality that were added in this milestone — written so a non-technical reviewer can see at a glance what new things to expect in the app now that this milestone is done. Frame each bullet as a capability the user will now see or be able to do, not as a technical artifact. Keep it short and scannable.
-   - Then include the implementation detail sections below for the next milestone's agent to reference:
-     - What was built (files created, models added, routes added, migrations, etc.)
-     - Any decisions made during implementation that weren't pre-specified in the PRD
-     - Anything the next milestone will need to know
-     - Any deviations from the PRD and why
-
-Ask me any clarifying questions using AskUserQuestion tool to lock in the implementation plan for this milestone.
+1. Plan the implementation for **only** milestone 1 as defined in the PRD. Do not plan or build anything from later milestones.
+2. Surface assumptions and open decisions with the AskUserQuestion tool before locking the plan (e.g. phone number validation approach, seed data shape).
+3. After the user confirms the plan, build only what is in milestone 1's scope.
+4. Verify against milestone 1's "Done when" criteria, and run the full verification checklist from the PRD's guardrails section: `bin/rails test` green, `npm run check` clean, `bin/rubocop` clean, browser-verify the flows, screenshots in `tmp/screenshots/`.
+5. When complete, write `_build_plan/milestones/1-app-setup-auth/milestone-log.md` structured as:
+   - **`## What's new in the app`** at the very top — a concise, human-readable bulleted list of user-facing capabilities added in this milestone, written for a non-technical reviewer.
+   - **`## What was built`** — files created, models added, routes added, migrations, tests.
+   - **`## Decisions made`** — anything decided during implementation that wasn't pre-specified in the PRD.
+   - **`## For the next milestone`** — anything milestone 2's agent needs to know.
+   - **`## Deviations from the PRD`** — what and why (or "none").

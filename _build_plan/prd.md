@@ -27,15 +27,16 @@ Built on Rails 8 with React 19 frontend, PostgreSQL database, and integrated wit
 
 ### Already provided by the Build New starter (Rails 8)
 
-- User authentication (signup, login, password reset) with Devise
-- User model and authenticated database schema
-- Authenticated app shell with Inertia React integration
-- Dashboard layout with sidebar navigation
-- PostgreSQL database with Rails migrations
-- Solid Queue background job processor (built into Rails 8)
-- Dark mode support with Tailwind
-- Tailwind CSS + shadcn UI components
-- Rails convention over configuration MVC structure
+Verified against the actual codebase — treat this list as ground truth:
+
+- User authentication (signup, login, logout, password reset) using Rails 8 built-in sessions + `has_secure_password` — **not Devise**
+- `users` table with `email`, `password_digest`, `timezone`, `admin` (no name or phone number yet — milestone 1 adds those)
+- Authenticated app shell with sidebar nav, dashboard page, settings page, and profile pages (email/password editing)
+- Admin area (`/admin/users`, `/admin/design-system`)
+- Custom design system (tokens + primitives under `app/frontend/components/ui/`, dark mode) — **not shadcn**; see CLAUDE.md "Design system"
+- Inertia.js bridging Rails ↔ React 19 (no API layer), with SSR wired up
+- PostgreSQL with Solid Queue / Solid Cache / Solid Cable sharing the one database
+- Minitest + system tests, RuboCop (omakase), Brakeman
 
 ---
 
@@ -43,7 +44,7 @@ Built on Rails 8 with React 19 frontend, PostgreSQL database, and integrated wit
 
 - **Multi-user accounts & team collaboration** — v1 is single-user per executive; team sharing and collaboration move to v2
 - **Calendar & CRM integrations** — No auto-pulling data from LinkedIn, Salesforce, or calendar tools; executives provide context directly
-- **Historical briefing archive** — Each call creates one briefing; saving and comparing past briefings is a v2 feature
+- **Historical briefing archive** — The dashboard lists past requests and their briefings, but versioning, side-by-side comparison, and re-running old briefings are v2 features
 - **Premium research sources** — v1 uses public web research only; access to Bloomberg, CapIQ, or paid research databases is v2+
 - **Mobile app** — v1 is voice-native (works on any phone) but no dedicated mobile UI beyond the web dashboard
 - **Scheduling & calendar integration** — No built-in scheduler; executives manually trigger calls and callbacks
@@ -56,34 +57,36 @@ Built on Rails 8 with React 19 frontend, PostgreSQL database, and integrated wit
 #### ElevenLabs
 Voice calls, speech synthesis, and callback mechanism.
 Handles inbound calls from executives, records and transcribes conversations, generates natural-sounding verbal briefings, and initiates callbacks with the agent.
-**Credentials needed:** ElevenLabs API key
+**Credentials:** `ELEVENLABS_API_KEY` env var.
+**Operational notes:** Inbound calls and post-call webhooks require a publicly reachable URL — use a tunnel (ngrok/cloudflared) in development. Webhook endpoints must skip CSRF and verify the ElevenLabs webhook signature.
 
 #### Claude API
 Research parsing, insight synthesis, and interactive Q&A.
 Extracts structured information from call transcripts, synthesizes research into talking points and questions, and answers follow-up questions during callbacks.
-**Credentials needed:** Claude API key (from Anthropic)
+**Credentials:** `ANTHROPIC_API_KEY` env var.
 
 #### Perplexity API
 Real-time web research on companies, people, and industry trends.
 Gathers up-to-date information about the company, the person, recent news, and relevant industry context to fuel the briefing synthesis.
-**Credentials needed:** Perplexity API key
+**Credentials:** `PERPLEXITY_API_KEY` env var.
 
 #### AWS SES
 Email delivery for sending briefing documents to executives.
 Sends the written briefing document via email so executives can receive and reference it easily.
-**Credentials needed:** AWS SES credentials (access key, secret key)
+**Credentials:** AWS SES access key + secret key env vars.
+**Operational notes:** The sender domain/address must be verified in SES before production sends. Development uses the starter's `letter_opener` — no SES needed locally.
 
 ---
 
 ### Data model
 
 #### User
-The executive using the app. Starter template provides this.
-- email — login identifier
-- password — hashed password for authentication
-- name — executive's full name
-- phone_number — the number the agent calls back to
-- preferences — user settings (time zone, etc.)
+The executive using the app. Starter provides email/password/timezone/admin; milestone 1 adds the rest.
+- email — login identifier (starter)
+- password — hashed via `has_secure_password` (starter)
+- timezone — user's time zone (starter)
+- name — executive's full name (milestone 1)
+- phone_number — the number the agent calls back to, stored in E.164 format (milestone 1)
 
 #### Interview Request
 A single briefing request: the meeting or interview an executive is preparing for.
@@ -97,8 +100,15 @@ A single briefing request: the meeting or interview an executive is preparing fo
 - executive_context — notes the executive provided during the intake call
 - executive_objectives — what the executive wants to achieve
 - call_transcript — the full transcript from the intake call
-- audio_recording_url — the audio file of the intake call
-- status — where the request is (pending_research, research_complete, briefing_ready, callback_scheduled, completed)
+- audio_recording_url — URL of the intake-call recording hosted by ElevenLabs (external URL, not a stored file)
+- status — lifecycle enum, each transition set by exactly one actor:
+  - `intake_review` — details extracted from the call, awaiting executive confirmation (set by the intake webhook/extraction)
+  - `pending_research` — executive confirmed, research queued (set by the confirm action)
+  - `researching` — research/synthesis jobs running (set by the research job)
+  - `briefing_ready` — synthesis complete, briefing viewable (set by the synthesis job)
+  - `completed` — callback delivered (set when the callback finishes)
+  - `failed` — unrecoverable pipeline error; store a human-readable error message alongside (set by any job on permanent failure)
+- error_message — populated when status is `failed`, shown on the dashboard
 - created_at, updated_at
 
 #### Research Data
@@ -120,10 +130,9 @@ The synthesized briefing document for an Interview Request.
 - opportunities — outcomes to push for, key wins to target
 - risks — potential pitfalls, topics to tread carefully on
 - key_facts — quick reference facts about company/person
-- audio_file_url — the downloadable audio briefing
-- pdf_file_url — the downloadable written briefing
+- audio_file — the downloadable audio briefing (Active Storage attachment, not a URL column; generated in milestone 5)
+- pdf_file — the downloadable written briefing (Active Storage attachment, not a URL column; generated in milestone 5)
 - created_at
-- callback_scheduled_at
 - callback_completed_at
 
 #### Follow-up Q&A
@@ -131,22 +140,41 @@ Questions asked during the callback conversation.
 - interview_request — which request this Q&A is for
 - question — what the executive asked
 - answer — what the agent answered
-- timestamp
+- created_at (ordering within the callback session)
 
 ---
 
-## Milestone 1 — App setup & auth
+## Build conventions & guardrails (all milestones)
 
-Set up the core Rails 8 + React application with user authentication, database, and the authenticated dashboard shell. This is the foundation all other milestones build on.
+These apply to every milestone below; milestone prompts reference this section instead of repeating it.
+
+**Follow CLAUDE.md.** It is the repo's ground truth for: Inertia response rules (mutations redirect — never `head :ok` / `render json:` from Inertia-routed actions, except raw-`fetch` webhook/API endpoints), page metadata (all four head tags on every page, no exceptions), the design system (use existing tokens/primitives, bare semantic HTML for text, no ad-hoc styles), SSR constraints (no browser globals at module top-level or during render), and crawler files (all pages built in these milestones are auth-gated — keep them out of `config/sitemap.rb` and `public/llms.txt`, and add `Disallow:` lines to `public/robots.txt` for new route prefixes).
+
+**Working guidelines** (condensed from the karpathy-guidelines skill):
+
+1. **Think before coding.** State assumptions explicitly. If multiple interpretations or approaches exist, present them — don't pick silently. If something is unclear, stop and ask.
+2. **Simplicity first.** Minimum code that satisfies the milestone's "Done when". No features beyond the milestone scope, no abstractions for single-use code, no speculative configurability, no error handling for impossible scenarios.
+3. **Surgical changes.** Touch only what the milestone requires. Don't refactor or "improve" adjacent starter code. Match existing style. Every changed line should trace to the milestone scope.
+4. **Goal-driven execution.** Treat each "Done when" bullet as a verifiable check. Plan as numbered steps, each with its own verification.
+
+**Secrets.** All API keys come from env vars (see "External integrations"). Never commit keys. Fail loudly at the point of use when a key is missing — don't add stub/fake modes that mask missing credentials.
+
+**External API calls run in Solid Queue jobs**, never in the request/response cycle. Jobs must be idempotent (safe to retry) and on permanent failure set the Interview Request to `failed` with a human-readable `error_message` instead of failing silently.
+
+**Verification before reporting done** (every milestone): `bin/rails test` green, `npm run check` clean, `bin/rubocop` clean, browser-verify the milestone's user flows end-to-end, screenshots in `tmp/screenshots/`.
+
+---
+
+## Milestone 1 — App setup & domain foundation
+
+The starter already provides auth, the app shell, dashboard, settings, profile pages, and Solid Queue (see "Already provided by the Build New starter" above — verified against the codebase). Milestone 1 is the **delta**: the domain models and the profile fields the voice flow needs.
 
 ### What gets built
 
-- Rails 8 backend with MVC structure, routing, and middleware
-- React 19 frontend with Inertia integration
-- Database models for User, Interview Request, Research Data, Briefing, Follow-up Q&A
-- Settings/profile page where users can view and edit their phone number and preferences
-- Responsive UI (Tailwind + shadcn components)
-- Configured Solid Queue for background jobs
+- Migrations + models for Interview Request, Research Data, Briefing, and Follow-up Q&A per the data model above — associations, the status enum, and validations
+- `name` and `phone_number` columns on User, with the settings/profile page extended so users can view and edit both (phone number validated and normalized to E.164 — milestone 4's callback agent dials this value exactly)
+- Dashboard lists the current user's Interview Requests with status badges, including an empty state (there's no way to create a request until milestone 2, so seed data demonstrates the populated list)
+- Model tests covering validations, associations, and status transitions
 
 ### What this milestone explicitly does NOT include
 
@@ -154,11 +182,14 @@ Set up the core Rails 8 + React application with user authentication, database, 
 - Research or synthesis pipelines
 - Callback mechanism or voice features
 - Briefing generation or documents
-- Any external API integrations beyond database
+- Any external API integrations
 
 ### Done when
 
-You can sign up with an email/password, log in, access the authenticated dashboard with nav and sidebar, toggle dark mode, and access a settings page where you can view and edit your phone number. All pages are responsive and properly styled with Tailwind + shadcn.
+- You can sign up, log in, and edit your name and phone number in settings; values persist and invalid phone numbers are rejected with a visible error.
+- The dashboard lists seeded Interview Requests with correct status badges, and shows a sensible empty state for a fresh user.
+- All pages follow the design system and set the four required head tags.
+- `bin/rails test`, `npm run check`, and `bin/rubocop` all pass.
 
 ---
 
@@ -172,11 +203,12 @@ Build the voice call interface with ElevenLabs integration and the information c
 - Voice agent interviews executives: collects company name, contact person, meeting date, meeting type, objectives, and context
 - Call recording and transcription (via ElevenLabs)
 - Agent confirms extracted details back to the executive before hanging up
+- Webhook endpoint receiving ElevenLabs post-call data — CSRF-exempt, verifies the ElevenLabs webhook signature, and is idempotent (a re-delivered webhook must not create a duplicate Interview Request). Development requires a tunnel (ngrok/cloudflared) so ElevenLabs can reach the app.
+- Information extraction: structured fields (company, person, date, objectives, etc.) from the conversation — either ElevenLabs' built-in data-collection or a Claude extraction pass over the transcript; present both options during planning and pick the simpler one that works
+- Interview Request created from call data with status `intake_review`
 - Dashboard page to view all past calls and their transcripts
-- Information extraction: app parses the transcript and extracts structured fields (company, person, date, objectives, etc.)
-- Interview Request creation from call data
-- Dashboard form for executives to review extracted information, make corrections, and add additional context
-- Status indicator showing which Interview Requests are pending research vs. ready for next steps
+- Dashboard form for executives to review extracted information, make corrections, add context, and **confirm** — confirmation moves the request to `pending_research`
+- Status badges distinguish `intake_review` from `pending_research`
 - Phone number on file is displayed and editable (from milestone 1 settings)
 
 ### What this milestone explicitly does NOT include
@@ -199,10 +231,10 @@ Build the automated research pipeline. Once an Interview Request is ready, the a
 
 ### What gets built
 
-- Background job that triggers when an Interview Request is confirmed
+- Solid Queue job that triggers when an Interview Request is confirmed; sets status to `researching`, is idempotent, and on permanent failure sets `failed` + `error_message` (surfaced on the dashboard with a retry action)
 - Perplexity API integration to research company, person, industry trends, and recent news
 - Research results stored in Research Data entity
-- Dashboard displays research status (pending, in progress, complete) for each request
+- Dashboard displays research status for each request (driven by the status enum)
 - Claude API integration to synthesize research into:
   - Talking points (5–10 key messages)
   - Likely questions (organized by topic)
@@ -212,7 +244,7 @@ Build the automated research pipeline. Once an Interview Request is ready, the a
 - Briefing entity created with synthesized insights
 - Dashboard displays the complete briefing with all sections (talking points, questions, opportunities, risks, facts)
 - Expandable sections: clicking a talking point or question shows supporting research behind it
-- Status update: Interview Request moves to "briefing_ready"
+- Status update: Interview Request moves to `briefing_ready` when synthesis completes
 
 ### What this milestone explicitly does NOT include
 
@@ -223,7 +255,7 @@ Build the automated research pipeline. Once an Interview Request is ready, the a
 
 ### Done when
 
-You confirm an Interview Request and the research pipeline kicks off automatically. Within a few moments, research completes and you see a dashboard page with all the synthesized briefing content: talking points, likely questions, opportunities, risks, and key facts. Each section is clear, scannable, and expandable to show the research behind it.
+You confirm an Interview Request and the research pipeline kicks off automatically. Within a few minutes, research and synthesis complete and you see a dashboard page with all the synthesized briefing content: talking points, likely questions, opportunities, risks, and key facts. Each section is clear, scannable, and expandable to show the research behind it. If a pipeline job fails permanently, the dashboard shows the failure and lets you retry.
 
 ---
 
@@ -233,14 +265,14 @@ Build the callback mechanism and interactive Q&A. Once a briefing is ready, the 
 
 ### What gets built
 
-- Callback trigger: briefing can be marked ready for callback (automatic or manual via button)
-- ElevenLabs callback agent that calls the executive's phone number on file
-- Agent verbally walks through the briefing: talking points, likely questions, opportunities, risks, key context (in a conversational coaching style)
+- Callback trigger: a "Call me now" button on a `briefing_ready` request (on-demand only in v1 — no scheduling)
+- ElevenLabs outbound call to the executive's E.164 phone number on file
+- Agent verbally walks through the briefing: talking points, likely questions, opportunities, risks, key context (in a conversational coaching style) — the briefing content is passed to the agent as conversation context
 - After verbal delivery, agent opens for questions: "What would you like to know more about?"
-- Executive asks follow-up questions via voice; agent listens and answers using Claude API
-- Questions and answers are captured and stored in Follow-up Q&A entity
+- Executive asks follow-up questions via voice; the agent answers from the briefing + research context. Two viable designs — the ElevenLabs agent's own LLM primed with the briefing, or a custom-LLM bridge to Claude — present both during planning and pick the simpler one that meets "Done when"
+- Questions and answers are captured (via the post-call webhook/transcript) and stored in the Follow-up Q&A entity
 - Executive can ask multiple questions in one callback session
-- Dashboard shows callback status (scheduled, completed)
+- Request moves to `completed` when the callback finishes
 - Dashboard displays the Q&A transcript from the callback for reference
 
 ### What this milestone explicitly does NOT include
@@ -274,11 +306,11 @@ Generate and deliver the audio and written briefing documents so executives have
   - Opportunities & risks
   - Key facts and statistics
   - Research sources/references
-- PDF is clean, scannable, professional layout (Tailwind-styled or PDF library)
+- PDF is clean, scannable, professional layout (server-side PDF library — pick during planning)
 - PDF is downloadable from the dashboard
-- Both files (audio + PDF) are available immediately after synthesis completes
+- Both files are generated by a Solid Queue job after synthesis completes and stored as Active Storage attachments on the Briefing
 - Dashboard displays download links for both files
-- Optional: email the briefing document to the executive via AWS SES
+- Email the written briefing (PDF attached or download link) to the executive via Action Mailer — AWS SES in production, the starter's `letter_opener` in development
 
 ### What this milestone explicitly does NOT include
 
@@ -290,4 +322,4 @@ Generate and deliver the audio and written briefing documents so executives have
 
 ### Done when
 
-After a briefing is synthesized, you see download buttons on the dashboard for both an audio file and a PDF. You can download the audio, listen to it in any player, and download the PDF to read or print. The audio is clear and professional, the PDF is well-formatted and easy to reference, and both contain the full briefing content (talking points, questions, opportunities, risks, key facts).
+After a briefing is synthesized, you see download buttons on the dashboard for both an audio file and a PDF. You can download the audio, listen to it in any player, and download the PDF to read or print. The audio is clear and professional, the PDF is well-formatted and easy to reference, and both contain the full briefing content (talking points, questions, opportunities, risks, key facts). The briefing email arrives (visible in `letter_opener` in development) with the PDF attached or linked.

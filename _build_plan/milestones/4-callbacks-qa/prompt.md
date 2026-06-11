@@ -2,16 +2,31 @@
 
 You are entering plan mode to plan and then build milestone 4 of this project.
 
-## Context
+## Context — read before planning
 
-- Read `@_build_plan/prd.md` for the full project context, scope, data model, and tech stack.
-- Read the milestone-log.md files from milestones 1–3 to understand what has already been built.
+- `@_build_plan/prd.md` — full project context, scope, data model, and tech stack. The **"Build conventions & guardrails (all milestones)"** section is binding for this milestone.
+- `@CLAUDE.md` — repo ground truth: Inertia response rules (callback webhooks are raw-`fetch`-style exceptions), page metadata, design system, testing requirements.
+- The milestone-log.md files in `@_build_plan/milestones/1-app-setup-auth/`, `@_build_plan/milestones/2-voice-intake-capture/`, and `@_build_plan/milestones/3-research-pipeline/` — what has already been built.
+
+## Working rules (binding)
+
+1. **Think before coding.** State your assumptions explicitly. If multiple interpretations exist, present them — don't pick silently.
+2. **Simplicity first.** Minimum code that meets "Done when". Nothing speculative.
+3. **Surgical changes.** Touch only milestone 4 scope. Match existing style.
+4. **Goal-driven execution.** Plan numbered steps, each with its own verification check.
 
 ## Your task
 
 1. Plan the implementation for **only** milestone 4 as defined in the PRD. Do not plan or build anything from later milestones.
-2. After the user confirms the plan, build only what is in milestone 4's scope.
-3. Verify your work against the "Done when" criteria for milestone 4 in the PRD.
-4. When complete, write a `milestone-log.md` documenting what was built, decisions made, and anything the next milestone needs to know.
-
-Ask me any clarifying questions using AskUserQuestion tool to lock in the implementation plan for this milestone.
+2. Surface assumptions and open decisions with the AskUserQuestion tool before locking the plan. At minimum:
+   - Q&A answering design (the PRD leaves this open): ElevenLabs agent's own LLM primed with the briefing as context vs. a custom-LLM bridge to Claude — present trade-offs, recommend the simpler one that meets "Done when".
+   - How briefing content is delivered to the outbound agent (dynamic variables / conversation overrides) and any size limits.
+   - How Q&A pairs are extracted from the callback (post-call webhook/transcript reuse from milestone 2).
+3. After the user confirms the plan, build only what is in milestone 4's scope. Callback completion moves the request to `completed`.
+4. Verify against milestone 4's "Done when" criteria, and run the full verification checklist from the PRD's guardrails section: `bin/rails test` green (stub external APIs in tests), `npm run check` clean, `bin/rubocop` clean, browser-verify the flows, screenshots in `tmp/screenshots/`.
+5. When complete, write `_build_plan/milestones/4-callbacks-qa/milestone-log.md` structured as:
+   - **`## What's new in the app`** at the very top — concise, user-facing capabilities for a non-technical reviewer.
+   - **`## What was built`** — files, models, routes, migrations, jobs, tests.
+   - **`## Decisions made`** — anything decided that wasn't pre-specified in the PRD.
+   - **`## For the next milestone`** — anything milestone 5's agent needs to know.
+   - **`## Deviations from the PRD`** — what and why (or "none").
