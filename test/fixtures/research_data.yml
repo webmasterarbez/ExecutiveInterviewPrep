@@ -1,0 +1,7 @@
+_fixture:
+  model_class: ResearchData
+
+northwind_research:
+  interview_request: northwind_pitch
+  company_overview: Northwind Capital is a mid-market private equity firm.
+  person_bio: Miguel Santos has led the firm's technology practice since 2018.

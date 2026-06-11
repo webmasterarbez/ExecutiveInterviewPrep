@@ -10,9 +10,63 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_23_000005) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_11_054727) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "briefings", force: :cascade do |t|
+    t.bigint "interview_request_id", null: false
+    t.text "talking_points"
+    t.text "likely_questions"
+    t.text "opportunities"
+    t.text "risks"
+    t.text "key_facts"
+    t.datetime "callback_completed_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["interview_request_id"], name: "index_briefings_on_interview_request_id", unique: true
+  end
+
+  create_table "follow_up_qas", force: :cascade do |t|
+    t.bigint "interview_request_id", null: false
+    t.text "question"
+    t.text "answer"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["interview_request_id"], name: "index_follow_up_qas_on_interview_request_id"
+  end
+
+  create_table "interview_requests", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "meeting_title"
+    t.datetime "meeting_date"
+    t.string "company_name"
+    t.string "contact_person_name"
+    t.string "contact_person_title"
+    t.text "contact_person_background"
+    t.text "executive_context"
+    t.text "executive_objectives"
+    t.text "call_transcript"
+    t.string "audio_recording_url"
+    t.string "status", default: "intake_review", null: false
+    t.text "error_message"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_interview_requests_on_user_id"
+  end
+
+  create_table "research_data", force: :cascade do |t|
+    t.bigint "interview_request_id", null: false
+    t.text "company_overview"
+    t.text "company_news"
+    t.text "person_bio"
+    t.text "person_social_profiles"
+    t.text "industry_context"
+    t.text "research_sources"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["interview_request_id"], name: "index_research_data_on_interview_request_id", unique: true
+  end
 
   create_table "sessions", force: :cascade do |t|
     t.integer "user_id", null: false
@@ -172,9 +226,15 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_23_000005) do
     t.boolean "admin", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "name"
+    t.string "phone_number"
     t.index ["email"], name: "index_users_on_email", unique: true
   end
 
+  add_foreign_key "briefings", "interview_requests"
+  add_foreign_key "follow_up_qas", "interview_requests"
+  add_foreign_key "interview_requests", "users"
+  add_foreign_key "research_data", "interview_requests"
   add_foreign_key "sessions", "users"
   add_foreign_key "solid_queue_blocked_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_claimed_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade

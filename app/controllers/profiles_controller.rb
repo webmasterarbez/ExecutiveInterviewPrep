@@ -7,6 +7,15 @@ class ProfilesController < ApplicationController
     render inertia: "profile/Password"
   end
 
+  def update_details
+    if Current.user.update(params.permit(:name, :phone_number))
+      redirect_to profile_path, notice: "Details updated."
+    else
+      redirect_to profile_path,
+                  inertia: { errors: Current.user.errors.to_hash(true).transform_values(&:first) }
+    end
+  end
+
   def update_email
     if Current.user.update(params.permit(:email))
       redirect_to profile_path, notice: "Email updated."

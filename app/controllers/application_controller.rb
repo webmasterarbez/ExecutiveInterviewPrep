@@ -8,6 +8,8 @@ class ApplicationController < ActionController::Base
       current_user: Current.user && {
         id: Current.user.id,
         email: Current.user.email,
+        name: Current.user.name,
+        phone_number: Current.user.phone_number,
         timezone: Current.user.timezone,
         admin: Current.user.admin?
       },

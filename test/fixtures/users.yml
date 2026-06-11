@@ -3,6 +3,8 @@
 one:
   email: one@example.com
   password_digest: <%= password_digest %>
+  name: Jordan Blake
+  phone_number: "+12125550123"
 
 two:
   email: two@example.com

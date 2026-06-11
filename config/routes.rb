@@ -19,6 +19,7 @@ Rails.application.routes.draw do
 
   get   "profile",          to: "profiles#details",          as: :profile
   get   "profile/password", to: "profiles#password",         as: :profile_password
+  patch "profile/details",  to: "profiles#update_details"
   patch "profile/email",    to: "profiles#update_email"
   patch "profile/password", to: "profiles#update_password"
 

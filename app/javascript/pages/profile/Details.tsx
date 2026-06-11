@@ -13,7 +13,16 @@ export default function ProfileDetails() {
   const user = props.current_user
   const errors = props.errors ?? {}
 
+  const detailsForm = useForm({
+    name: user?.name ?? "",
+    phone_number: user?.phone_number ?? "",
+  })
   const emailForm = useForm({ email: user?.email ?? "" })
+
+  const submitDetails = (e: FormEvent) => {
+    e.preventDefault()
+    detailsForm.patch("/profile/details", { preserveScroll: true })
+  }
 
   const submit = (e: FormEvent) => {
     e.preventDefault()
@@ -37,6 +46,46 @@ export default function ProfileDetails() {
         {props.flash?.notice && (
           <p className="mt-6 text-sm text-accent">{props.flash.notice}</p>
         )}
+
+        <section className="mt-10 max-w-md">
+          <form onSubmit={submitDetails} className="space-y-4">
+            <div className="space-y-2">
+              <label htmlFor="name">Name</label>
+              <Input
+                id="name"
+                type="text"
+                autoComplete="name"
+                aria-invalid={!!errors.name}
+                value={detailsForm.data.name}
+                onChange={(e) => detailsForm.setData("name", e.target.value)}
+              />
+              {errors.name && (
+                <p className="text-xs text-danger-display">{errors.name}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="phone_number">Phone number</label>
+              <Input
+                id="phone_number"
+                type="tel"
+                autoComplete="tel"
+                placeholder="+1 212 555 0123"
+                aria-invalid={!!errors.phone_number}
+                value={detailsForm.data.phone_number}
+                onChange={(e) => detailsForm.setData("phone_number", e.target.value)}
+              />
+              <p className="text-xs text-ink-muted">
+                Used for briefing callbacks. Include your country code, e.g. +1 212 555 0123.
+              </p>
+              {errors.phone_number && (
+                <p className="text-xs text-danger-display">{errors.phone_number}</p>
+              )}
+            </div>
+            <Button type="submit" disabled={detailsForm.processing}>
+              Update details
+            </Button>
+          </form>
+        </section>
 
         <section className="mt-10 max-w-md">
           <form onSubmit={submit} className="space-y-4">

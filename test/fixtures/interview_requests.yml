@@ -1,0 +1,23 @@
+acme_board:
+  user: one
+  meeting_title: Board interview with Acme Robotics
+  company_name: Acme Robotics
+  contact_person_name: Dana Whitfield
+  contact_person_title: Chief Executive Officer
+  meeting_date: <%= 3.days.from_now %>
+  status: intake_review
+
+northwind_pitch:
+  user: one
+  meeting_title: Partnership pitch to Northwind Capital
+  company_name: Northwind Capital
+  contact_person_name: Miguel Santos
+  meeting_date: <%= 5.days.from_now %>
+  status: briefing_ready
+
+failed_request:
+  user: one
+  meeting_title: Advisory call with Quantum Logistics
+  company_name: Quantum Logistics
+  status: failed
+  error_message: Research could not be completed.
