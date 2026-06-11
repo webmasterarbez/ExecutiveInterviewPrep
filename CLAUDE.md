@@ -2,13 +2,21 @@
 
 Guidance for Claude Code (claude.ai/code) working in this repo.
 
+## Project: Executive Interview Prep
+
+A voice-activated research agent for executives. An executive calls a dedicated number and describes an upcoming interview or meeting to an ElevenLabs voice agent; the app researches the company, person, industry, and recent news (Perplexity), synthesizes talking points, likely questions, opportunities, and risks (Claude API), then calls the executive back for a verbal briefing with interactive Q&A. The executive also receives a downloadable audio briefing and a written PDF briefing (delivered via AWS SES email).
+
+- **Integrations (locked for v1):** ElevenLabs (voice agent + telephony), Anthropic Claude API (synthesis), Perplexity (research), AWS SES (email). Don't propose substitute providers.
+- **Build plan:** `_build_plan/` holds the PRD and five milestone prompts (1 app setup/auth → 2 voice intake → 3 research pipeline → 4 callbacks/Q&A → 5 audio + written briefings). It is a temporary build-out artifact — no code, config, tests, or runtime logic may reference or depend on it, and the folder gets deleted once all milestones ship.
+- **Production target:** `https://eip.vrtcl.network` (VPS behind Cloudflare). Use this host for `APP_HOST`, `config/sitemap.rb`, and the `Sitemap:` line in `public/robots.txt`. `docs/hatchbox-deployment-guide.md` contains the starter template's Hatchbox deploy notes.
+
 ## Tech Stack
 
 Rails 8 + React 19 + PostgreSQL, bridged by **Inertia.js** (no separate API layer). TypeScript, Vite 7, Propshaft. Ruby 3.3.6.
 
 **Tailwind CSS v4** is wired up via `@tailwindcss/vite`. The app has a complete design system (tokens, primitives, dark-mode theming, the `cn()` utility, shared components under `app/frontend/components/`) — see the "Design system" section below and the live reference at `/admin/design-system`.
 
-Background jobs, caching, and WebSockets use the Rails 8 "Solid" trifecta (Solid Queue, Solid Cache, Solid Cable), all database-backed. **All four share the single PostgreSQL database** (`<app_name>_<env>`, where `app_name` is the repo's folder name — `build_new` for this template) — there are no separate cache/cable/queue databases, no `db/cache_schema.rb` / `db/cable_schema.rb` / `db/queue_schema.rb`, and `config/cache.yml` / `config/cable.yml` / `config/queue.yml` have no separate connection blocks. Override the connection via `DATABASE_URL` or the `DATABASE_USER` / `DATABASE_PASSWORD` / `DATABASE_HOST` / `DATABASE_PORT` env vars (see `config/database.yml`).
+Background jobs, caching, and WebSockets use the Rails 8 "Solid" trifecta (Solid Queue, Solid Cache, Solid Cable), all database-backed. **All four share the single PostgreSQL database** (`<app_name>_<env>`, where `app_name` is the repo's folder name — `executiveinterviewprep` for this repo, so `executiveinterviewprep_development` / `executiveinterviewprep_test`) — there are no separate cache/cable/queue databases, no `db/cache_schema.rb` / `db/cable_schema.rb` / `db/queue_schema.rb`, and `config/cache.yml` / `config/cable.yml` / `config/queue.yml` have no separate connection blocks. Override the connection via `DATABASE_URL` or the `DATABASE_USER` / `DATABASE_PASSWORD` / `DATABASE_HOST` / `DATABASE_PORT` env vars (see `config/database.yml`).
 
 **Per-app, per-worktree DB naming.** `config/database.yml` derives the development *and* test DB names automatically, so an app forked from this template gets its own databases with no edits to the file. The name has two parts: an `app_name` (the repository's own folder name, sanitized to a legal Postgres identifier — `coolapp`, or `build-new` → `build_new`) and a worktree suffix. In the **main checkout** (where `.git` is a directory) the suffix is empty: `<app_name>_development` / `<app_name>_test`. In a **git worktree** (where `.git` is a pointer file written by `git worktree add`, e.g. Conductor workspaces) the worktree's own folder name is appended — `<app_name>_development_<worktree>` / `<app_name>_test_<worktree>` — so parallel worktrees never share or clobber each other's schemas, and parallel `bin/rails test` runs no longer collide on a shared test DB. `app_name` is found from the main repo even inside a worktree: the worktree's `.git` pointer (`gitdir: <repo>/.git/worktrees/<wt>`) is read and walked up to the main repo root, whose folder name becomes `app_name`. This matters when forking this template into a new app: if two checkouts shared a dev DB, migrations from one would land in the other and `db:schema:dump` would commit phantom tables. Override the development name entirely with `DATABASE_NAME`. Staging/production are named the same way but are overridden by `DATABASE_URL` on real deploys, so the derived name there is only a local fallback.
 
@@ -19,10 +27,15 @@ bin/setup              # Initial setup (bundle, db:prepare, start dev)
 bin/dev                # Dev server (Rails :3000 + Vite :3036)
 bin/rails test         # Minitest
 bin/rails test:system  # Capybara + headless Chrome
+bin/rails-dev <cmd>    # bundle exec wrapper that sets the gem PATH and
+                       # DATABASE_HOST=/var/run/postgresql — use it to run
+                       # Rails/rake commands outside bin/dev on this machine
 npm run check          # TypeScript type checking
 bin/rubocop            # Ruby linting (rubocop-rails-omakase)
 bin/brakeman           # Security scanning
 ```
+
+Foreman is declared in the `Gemfile` (`development` group) and `bin/dev` bootstraps it — never `gem install foreman` system-wide outside the bundle. If port 3000 is taken (other local services may hold it), check with `lsof -i :3000` before reaching for `PORT=` overrides, and don't commit ad-hoc port changes.
 
 ## Architecture
 
@@ -181,7 +194,7 @@ export default function Pricing() {
 - Tailwind CSS v4 + a complete design system (tokens, primitives, dark mode) — see the "Design system" section below and `/admin/design-system`
 - `ApplicationController` restricts to modern browsers
 - Inertia shared props: `current_user`, `flash`, `errors` on every page (see `@/types/inertia`)
-- PostgreSQL (database `<app_name>_<env>`, derived from the repo's folder name — `build_new` for this template) is the only database — Active Record + Solid Queue/Cache/Cable all share it
+- PostgreSQL (database `<app_name>_<env>`, derived from the repo's folder name — `executiveinterviewprep` here) is the only database — Active Record + Solid Queue/Cache/Cable all share it
 
 <!-- bm-design-system:start -->
 ## Design system
@@ -210,5 +223,5 @@ Source files are declared explicitly via an `@source` directive in `application.
 ## Testing and verification
 
 - **After implementing a significant feature, ensure we have test coverage for that feature** and that the full test suite still passes 100%. Run `bin/rails test` (and `bin/rails test:system` for system tests) before reporting the task as complete.
-- **When making any front-end UI changes or features, verify with the `agent-browser` skill** that all user paths and flows actually work end-to-end and remain accessible.
+- **When making any front-end UI changes or features, verify with the `verify` skill** (browser-driven check; the `agent-browser` skill in Conductor environments) that all user paths and flows actually work end-to-end and remain accessible.
 - **For new pages, new layouts, or significant UI changes, take a screenshot and evaluate your own work** — confirm styling, design, visual balance, and responsiveness (desktop + mobile widths) are executed correctly. Store these verification screenshots in `tmp/screenshots/` so they're easy to find and don't pollute the repo.

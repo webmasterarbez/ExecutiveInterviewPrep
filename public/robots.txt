@@ -20,4 +20,4 @@ Disallow: /up
 # Point crawlers at the sitemap so they can discover every public page.
 # Replace the host below to match the deployed domain (or generate via
 # bin/rails sitemap:refresh, which uses APP_HOST / default_url_options).
-Sitemap: https://example.com/sitemap.xml
+Sitemap: https://eip.vrtcl.network/sitemap.xml
